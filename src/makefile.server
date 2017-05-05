@@ -1,0 +1,41 @@
+
+YICES_DIR=/home/pramod/Downloads/yices-1.0.40
+
+CC=$(CXX)
+CFLAGS = -I. -I$(YICES_DIR)/include -Wall -O2
+CXXFLAGS = $(CFLAGS)
+LDFLAGS = -L$(YICES_DIR)/lib
+LOADLIBES = -lyices
+
+BASE_LIBS = base/basic_types.o base/symbolic_execution.o \
+            base/symbolic_interpreter.o base/symbolic_path.o \
+            base/symbolic_predicate.o base/symbolic_expression.o \
+            base/yices_solver.o
+
+all: libserver libcrest/libcrest.a run_crest/run_crest_server \
+     process_cfg/process_cfg tools/print_execution \
+     install
+
+libserver: libserver/server.o
+	rm libserver/server.o
+	gcc -c libserver/server.cc -o libserver/server.o
+	ar -cvq libserver/libserver.a libserver/server.o
+	rm sockets/server.h sockets/server.cc
+	cp libserver/server.h sockets/server.h
+	cp libserver/server.cc sockets/server.cc
+
+libcrest/libcrest.a: libcrest/crest.o $(BASE_LIBS)
+	$(AR) rsv $@ $^
+
+run_crest/run_crest_server:  run_crest/concolic_search_server.o sockets/server.o $(BASE_LIBS)
+
+tools/print_execution: $(BASE_LIBS)
+
+install:
+	cp libcrest/libcrest.a ../lib
+	cp libserver/libserver.a ../lib
+	cp run_crest/run_crest_server ../bin
+	cp process_cfg/process_cfg ../bin
+	cp tools/print_execution ../bin
+	cp libcrest/crest.h ../include
+	cp libserver/server.h ../include
